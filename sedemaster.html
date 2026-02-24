@@ -42,14 +42,14 @@
         .sede-header { 
             width: 100%; padding: 15px; background: var(--card); border: none; 
             display: flex; justify-content: space-between; border-radius: 10px;
-            box-shadow: var(--shadow); color: var(--text); font-weight: bold; margin-bottom: 10px;
+            box-shadow: var(--shadow); color: var(--text); font-weight: bold; margin-bottom: 10px; cursor: pointer;
         }
         .task-card { 
             background: var(--card); margin: 12px 0; padding: 15px; border-radius: 12px;
             border-left: 6px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
         .task-card.urgent { border-left-color: var(--urgent); background: #fffcfc; }
-        .task-card.done { border-left-color: var(--done); background: #f0fff4; }
+        .task-card.done { border-left-color: var(--done); background: #f0fff4; opacity: 0.8; }
         
         .btn-status {
             width: 100%; margin-top: 10px; padding: 12px; border-radius: 8px; border: none;
@@ -60,7 +60,6 @@
 
         .img-preview { width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-top: 10px; }
 
-        /* GESTIÓN DE SEDES */
         .config-panel { background: var(--card); padding: 15px; border-radius: 12px; margin-top: 30px; border: 1px dashed #ccc; }
         .sede-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
 
@@ -112,11 +111,9 @@
 
     <div class="config-panel">
         <h4 style="margin-bottom: 10px; font-size: 0.9rem;">⚙️ PANEL DE CONTROL</h4>
-        <p style="font-size: 0.7rem; color: #888; margin-bottom: 10px;">Gestionar sedes registradas:</p>
         <div id="sedeManageList"></div>
-        
         <button onclick="clearAllData()" style="width: 100%; margin-top: 20px; padding: 10px; background: #e74c3c; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 0.75rem; cursor: pointer;">
-            🗑️ ELIMINAR TODO EL HISTORIAL Y FOTOS
+            🗑️ REINICIAR TODA LA APP
         </button>
     </div>
 </div>
@@ -141,21 +138,82 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('sede_pro_tasks')) || [];
-    let sedes = JSON.parse(localStorage.getItem('sede_pro_list')) || ["San Borja", "Marina 1", "Molina"];
+    const sedesIniciales = ["San Borja", "Marina 3", "Angamos", "Molina"];
+    
+    const pendientesIniciales = [
+        
+        // --- SEDE MOLINA (1 al 16) ---
+        { id: 1, sede: "Molina", desc: "¡LLAVE DE GAS CON FUGA! (Revisión inmediata)", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 2, sede: "Molina", desc: "Puerta de vidrio: Pendiente RESORTE, la puerta golpea fuertemente", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 3, sede: "Molina", desc: "Compra de repuesto para puerta de vidrio (Solución definitiva)", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 4, sede: "Molina", desc: "Máquina de frío almacén 1er piso: filtración de agua ocasional", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 5, sede: "Molina", desc: "Lavadero SSHH mujeres 1er piso: base rota", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 6, sede: "Molina", desc: "Cambio de fluorescente en techo de cocina y pasadizo entrada", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 7, sede: "Molina", desc: "Muebles de los boxes presentan deterioro (huecos)", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 8, sede: "Molina", desc: "Sillas de bar con espaldar fuera de lugar (Cuarto eléctrico)", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 9, sede: "Molina", desc: "Reparación de colomurales en salón, pasadizos y boxes", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 10, sede: "Molina", desc: "Reparación de MDF en bar", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 11, sede: "Molina", desc: "Habilitar dimers en todos los boxes (están con interruptor)", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 12, sede: "Molina", desc: "Pintado de barandas de la escalera", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 13, sede: "Molina", desc: "Colocar colomurales en todas las paredes del Box 2", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 14, sede: "Molina", desc: "Rellenar las paredes de los demás boxes", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 15, sede: "Molina", desc: "LED quemado en el estante superior de la barra", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 16, sede: "Molina", desc: "LED de colores fallando (Puerta de almacén 1er piso)", priority: "normal", done: false, date: "23/02/2026" },
+
+        // --- SEDE MARINA 3 (17 al 27 - EXACTAMENTE 11) ---
+        { id: 17, sede: "Marina 3", desc: "Barra de Cocina: Filtro malogrado", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 18, sede: "Marina 3", desc: "Salón Principal: Cartel de SALIDA suelto (tornillos y tarugos)", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 19, sede: "Marina 3", desc: "Box 2: Interruptores en mal estado", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 20, sede: "Marina 3", desc: "Caja: Cambio de gaveta de dinero", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 21, sede: "Marina 3", desc: "Escalera: Luz parpadea (del 2do al 3er piso)", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 22, sede: "Marina 3", desc: "Box 1: Luz LED parpadea detrás de muebles", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 23, sede: "Marina 3", desc: "Box 1: Colocar extractor de aire", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 24, sede: "Marina 3", desc: "Baño Mujeres (2do piso): Cambiar foco por uno más luminoso", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 25, sede: "Marina 3", desc: "Baño Varones: Cambio de palanca del inodoro", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 26, sede: "Marina 3", desc: "Azotea: Puerta no cuenta con cerrojo", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 27, sede: "Marina 3", desc: "Ingreso: Pintar pared de entrada y Box 1", priority: "normal", done: false, date: "23/02/2026" },
+
+        // --- SEDE ANGAMOS (28 al 38) ---
+        { id: 28, sede: "Angamos", desc: "Soldar parantes en puerta principal", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 29, sede: "Angamos", desc: "Bar: Neones quemados (lado licores)", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 30, sede: "Angamos", desc: "Bar: Poner hilo de pescar para sostener licores", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 31, sede: "Angamos", desc: "Box 5: Cambio de papel tapiz", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 32, sede: "Angamos", desc: "Instalación de lavadero en azotea (limpieza)", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 33, sede: "Angamos", desc: "Compra de casilleros (lockers) personal", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 34, sede: "Angamos", desc: "Pintado de bases de mesas en boxes", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 35, sede: "Angamos", desc: "Colocar topes en puertas de boxes", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 36, sede: "Angamos", desc: "Pintar pared Box 4", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 37, sede: "Angamos", desc: "Pintado de palancas de inodoros (todos)", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 38, sede: "Angamos", desc: "Pintar pared externa Box 8", priority: "normal", done: false, date: "23/02/2026" },
+
+        // --- SEDE SAN BORJA (39 al 43) ---
+        { id: 39, sede: "San Borja", desc: "Lavadero de Bar: Hueco y manguera inferior dañada", priority: "urgente", done: false, date: "23/02/2026" },
+        { id: 40, sede: "San Borja", desc: "Box 2: Techo manchado con licor pegajoso", priority: "normal", done: false, date: "23/02/2026" },
+        { id: 41, sede: "San Borja", desc: "Baño Damas: Ajuste de puerta", priority: "normal", done: true, date: "23/02/2026" },
+        { id: 42, sede: "San Borja", desc: "Box 1: Pegar flecha de ruleta", priority: "normal", done: true, date: "23/02/2026" },
+        { id: 43, sede: "San Borja", desc: "Box 2: Amortiguador de puerta flojo", priority: "normal", done: true, date: "23/02/2026" }
+    ];
+
+    let db = JSON.parse(localStorage.getItem('sede_pro_tasks'));
+    let sedes = JSON.parse(localStorage.getItem('sede_pro_list'));
+
+    if (!db || db.length === 0) {
+        db = pendientesIniciales;
+        localStorage.setItem('sede_pro_tasks', JSON.stringify(db));
+    }
+    if (!sedes || sedes.length === 0) {
+        sedes = sedesIniciales;
+        localStorage.setItem('sede_pro_list', JSON.stringify(sedes));
+    }
 
     function initSedes() {
-        // Llenar el select del formulario
         const select = document.getElementById('sedeSelect');
         select.innerHTML = sedes.map(s => `<option value="${s}">📍 ${s}</option>`).join('');
-
-        // Llenar la lista de gestión de sedes
         const manageList = document.getElementById('sedeManageList');
         manageList.innerHTML = sedes.map((s, idx) => `
             <div class="sede-item">
                 <span>📍 ${s}</span>
                 <div>
-                    <i class="fas fa-edit" onclick="editSedeName(${idx})" style="color:var(--primary); cursor:pointer; margin-right:12px;"></i>
                     <i class="fas fa-trash" onclick="removeSede(${idx})" style="color:var(--urgent); cursor:pointer;"></i>
                 </div>
             </div>
@@ -170,16 +228,8 @@
         }
     }
 
-    function editSedeName(idx) {
-        const nuevoNombre = prompt("Nuevo nombre para la sede:", sedes[idx]);
-        if (nuevoNombre && nuevoNombre !== sedes[idx]) {
-            sedes[idx] = nuevoNombre;
-            saveSedes();
-        }
-    }
-
     function removeSede(idx) {
-        if(confirm(`¿Eliminar la sede "${sedes[idx]}" de la lista?`)) {
+        if(confirm(`¿Eliminar la sede "${sedes[idx]}"?`)) {
             sedes.splice(idx, 1);
             saveSedes();
         }
@@ -187,13 +237,12 @@
 
     function saveSedes() {
         localStorage.setItem('sede_pro_list', JSON.stringify(sedes));
-        initSedes();
         location.reload();
     }
 
     function clearAllData() {
-        if(confirm("⚠️ ¡PELIGRO! Esto borrará todos los trabajos guardados y las fotos. ¿Estás seguro?")) {
-            localStorage.removeItem('sede_pro_tasks');
+        if(confirm("Se borrará todo y volverá al estado inicial. ¿Proceder?")) {
+            localStorage.clear();
             location.reload();
         }
     }
@@ -205,7 +254,7 @@
         const priority = document.getElementById('priority').value;
         const file = document.getElementById('taskImg').files[0];
 
-        if(!desc) return alert("Escribe el detalle del trabajo");
+        if(!desc) return alert("Escribe el detalle");
 
         let imgBase64 = "";
         if(file) {
@@ -232,18 +281,22 @@
 
     function render() {
         const container = document.getElementById('listContainer');
-        const activeSedes = [...new Set(db.map(t => t.sede))];
         container.innerHTML = "";
-        activeSedes.forEach(s => {
+        
+        sedes.forEach(s => {
             const tasks = db.filter(t => t.sede === s);
+            if(tasks.length === 0) return;
+
             const sID = s.replace(/\s/g, '');
+            const pendCount = tasks.filter(t => !t.done).length;
+
             container.innerHTML += `
                 <div class="sede-group">
                     <div class="sede-header" onclick="toggleSede('${sID}')">
                         <span>${s}</span>
-                        <span>${tasks.filter(t=>!t.done).length} Pend.</span>
+                        <span style="color:${pendCount > 0 ? 'var(--urgent)' : 'var(--done)'}">${pendCount} Pend.</span>
                     </div>
-                    <div id="sede-${sID}" style="display:none">
+                    <div id="sede-${sID}" style="display:block; margin-bottom:20px;">
                         ${tasks.map(t => `
                             <div class="task-card ${t.priority === 'urgente'?'urgent':''} ${t.done?'done':''}">
                                 <div style="display:flex; justify-content:space-between;">
@@ -258,7 +311,7 @@
                                 </div>
                                 ${t.img ? `<img src="${t.img}" class="img-preview">` : ''}
                                 <button class="btn-status ${t.done?'status-done':'status-pending'}" onclick="toggleDone(${t.id})">
-                                    ${t.done ? '✅ LISTO' : '⚙️ MARCAR HECHO'}
+                                    ${t.done ? '✅ LISTO' : '⚙️ PENDIENTE'}
                                 </button>
                             </div>
                         `).join('')}
@@ -286,10 +339,10 @@
     }
 
     function deleteTask(id) {
-        if(confirm("¿Borrar trabajo?")) {
+        if(confirm("¿Borrar?")) {
             db = db.filter(x => x.id !== id);
             localStorage.setItem('sede_pro_tasks', JSON.stringify(db));
-            location.reload();
+            render();
         }
     }
 
@@ -304,24 +357,24 @@
             filtered = doneTasks.filter(t => t.date === today);
             title = "REPORTE DIARIO - " + today;
         } else if(type === 'week') {
-            const oneWeekAgo = new Date(); oneWeekAgo.setDate(now.getDate() - 7);
-            filtered = doneTasks.filter(t => { const [d, m, y] = t.date.split('/'); return new Date(y, m-1, d) >= oneWeekAgo; });
             title = "RESUMEN SEMANAL";
-        } else if(type === 'month') {
-            filtered = doneTasks.filter(t => { const [d, m, y] = t.date.split('/'); return parseInt(m) === (now.getMonth() + 1); });
+            filtered = doneTasks;
+        } else {
             title = "REPORTE MENSUAL";
+            filtered = doneTasks;
         }
 
-        if(filtered.length === 0) return alert("No hay nada marcado como hecho ✅");
+        if(filtered.length === 0) return alert("No hay trabajos finalizados.");
 
         const content = document.getElementById('rep-content');
         document.getElementById('rep-date').innerText = title;
         content.innerHTML = "";
-        const sedesRep = [...new Set(filtered.map(t => t.sede))];
-        sedesRep.forEach(s => {
+        
+        const activeSedesRep = [...new Set(filtered.map(t => t.sede))];
+        activeSedesRep.forEach(s => {
             const tasks = filtered.filter(t => t.sede === s);
             content.innerHTML += `<div style="margin-bottom:12px;"><p style="font-weight:bold; color:#2980b9;">🏢 ${s}</p>
-                ${tasks.map(t => `<p style="font-size:0.8rem; margin-left:10px;">• ${t.desc} (${t.date})</p>`).join('')}</div>`;
+                ${tasks.map(t => `<p style="font-size:0.8rem; margin-left:10px;">• ${t.desc}</p>`).join('')}</div>`;
         });
         document.getElementById('modal-report').style.display = 'flex';
     }
@@ -329,7 +382,7 @@
     function downloadReport() {
         html2canvas(document.getElementById('capture-area'), {scale:2}).then(canvas => {
             const link = document.createElement('a');
-            link.download = `Reporte_${Date.now()}.png`;
+            link.download = `Reporte_PapaTecnico_${Date.now()}.png`;
             link.href = canvas.toDataURL();
             link.click();
         });
